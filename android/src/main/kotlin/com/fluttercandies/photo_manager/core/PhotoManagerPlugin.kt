@@ -256,12 +256,6 @@ class PhotoManagerPlugin(
                 val type = call.argument<Int>("type")!!
                 permissionsUtils.presentLimited(type, resultHandler)
             }
-
-            Methods.ignorePermissionCheck -> {
-                val ignore = call.argument<Boolean>("ignore")!!
-                ignorePermissionCheck = ignore
-                resultHandler.reply(ignore)
-            }
         }
 
     }
@@ -319,6 +313,12 @@ class PhotoManagerPlugin(
                 // The plugin will not hold instances cache on Android.
                 resultHandler.reply(1)
             }
+
+            Methods.ignorePermissionCheck -> {
+                val ignore = call.argument<Boolean>("ignore")!!
+                ignorePermissionCheck = ignore
+                resultHandler.reply(ignore)
+            }
         }
     }
 
@@ -355,6 +355,14 @@ class PhotoManagerPlugin(
                 val list =
                     photoManager.getAssetListPaged(galleryId, type, page, size, option)
                 resultHandler.reply(ConvertUtils.convertAssets(list))
+            }
+
+            Methods.getAssetCountFromPath -> {
+                val galleryId = call.getString("id")
+                val type = call.getInt("type")
+                val option = call.getOption()
+
+                photoManager.getAssetCount(resultHandler, option, type, galleryId)
             }
 
             Methods.getAssetListRange -> {

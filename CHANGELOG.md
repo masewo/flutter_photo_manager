@@ -4,6 +4,27 @@ that can be found in the LICENSE file. -->
 
 # CHANGELOG
 
+## 3.0.0-dev.1
+
+***Breaking changes*** for remove some methods and classes.
+Remove next methods of class
+
+- `Editor.iOS`: use `Editor.darwin` instead.
+- `PermisstionRequestOption`: use `PermissionRequestOption` instead.
+- `AssetPathEntity.assetCount`: use `AssetPathEntity.assetCountAsync` instead.
+- Removed `AssetEntityImage` and `AssetEntityImageProvider`.
+
+Also see [Migration Guide][].
+
+## 2.8.1
+
+### Feature
+
+Fix:
+
+- Upgrade android/build.gradle to load current java version from some environment variables.
+- Fix the `setIgnorePermissionCheck` method not working on Android.
+
 ## 2.8.0
 
 ### Feature
