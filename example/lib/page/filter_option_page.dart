@@ -6,7 +6,7 @@ import '../model/photo_provider.dart';
 import '../widget/dialog/duration_picker.dart';
 
 class FilterOptionPage extends StatefulWidget {
-  const FilterOptionPage({Key? key}) : super(key: key);
+  const FilterOptionPage({super.key});
 
   @override
   State<FilterOptionPage> createState() => _FilterOptionPageState();
@@ -121,8 +121,12 @@ class _FilterOptionPageState extends State<FilterOptionPage> {
     );
   }
 
-  Widget buildDurationWidget(Listenable listenable, String title,
-      Duration value, void Function(Duration duration) onChanged) {
+  Widget buildDurationWidget(
+    Listenable listenable,
+    String title,
+    Duration value,
+    void Function(Duration duration) onChanged,
+  ) {
     return AnimatedBuilder(
       animation: listenable,
       builder: (BuildContext context, Widget? snapshot) {
@@ -137,7 +141,9 @@ class _FilterOptionPageState extends State<FilterOptionPage> {
           ),
           onTap: () async {
             final Duration? duration = await showCupertinoDurationPicker(
-                context: context, initDuration: value);
+              context: context,
+              initDuration: value,
+            );
 
             if (duration != null) {
               onChanged(duration);
@@ -201,7 +207,7 @@ class _FilterOptionPageState extends State<FilterOptionPage> {
 }
 
 class DarwinPathFilterPage extends StatefulWidget {
-  const DarwinPathFilterPage({Key? key}) : super(key: key);
+  const DarwinPathFilterPage({super.key});
 
   @override
   State<DarwinPathFilterPage> createState() => _DarwinPathFilterPageState();
@@ -239,28 +245,29 @@ class _DarwinPathFilterPageState extends State<DarwinPathFilterPage> {
     final PhotoProvider provider = context.watch<PhotoProvider>();
 
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Path filter'),
-        ),
-        body: ListView(
-          children: <Widget>[
-            buildGroup<PMDarwinAssetCollectionType>(
-              'PMDarwinAssetCollectionType',
-              PMDarwinAssetCollectionType.values,
-              provider.pathTypeList,
-              (value) {
-                provider.pathTypeList = value;
-              },
-            ),
-            buildGroup<PMDarwinAssetCollectionSubtype>(
-              'PMDarwinAssetCollectionSubtype',
-              PMDarwinAssetCollectionSubtype.values,
-              provider.pathSubTypeList,
-              (value) {
-                provider.pathSubTypeList = value;
-              },
-            ),
-          ],
-        ));
+      appBar: AppBar(
+        title: const Text('Path filter'),
+      ),
+      body: ListView(
+        children: <Widget>[
+          buildGroup<PMDarwinAssetCollectionType>(
+            'PMDarwinAssetCollectionType',
+            PMDarwinAssetCollectionType.values,
+            provider.pathTypeList,
+            (value) {
+              provider.pathTypeList = value;
+            },
+          ),
+          buildGroup<PMDarwinAssetCollectionSubtype>(
+            'PMDarwinAssetCollectionSubtype',
+            PMDarwinAssetCollectionSubtype.values,
+            provider.pathSubTypeList,
+            (value) {
+              provider.pathSubTypeList = value;
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

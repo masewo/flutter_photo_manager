@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class CreateFolderExample extends StatefulWidget {
-  const CreateFolderExample({Key? key}) : super(key: key);
+  const CreateFolderExample({super.key});
 
   @override
   State<CreateFolderExample> createState() => _CreateFolderExampleState();
@@ -81,7 +81,8 @@ class _CreateFolderExampleState extends State<CreateFolderExample> {
     return DropdownButton<AssetPathEntity>(
       items: subDir
           .map<DropdownMenuItem<AssetPathEntity>>(
-              (AssetPathEntity v) => _buildItem(v))
+            (AssetPathEntity v) => _buildItem(v),
+          )
           .toList(),
       onChanged: (AssetPathEntity? path) {
         parent = path;

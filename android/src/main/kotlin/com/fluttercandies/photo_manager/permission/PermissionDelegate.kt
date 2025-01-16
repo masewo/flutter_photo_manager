@@ -9,14 +9,12 @@ import com.fluttercandies.photo_manager.core.entity.PermissionResult
 import com.fluttercandies.photo_manager.permission.impl.PermissionDelegate19
 import com.fluttercandies.photo_manager.permission.impl.PermissionDelegate23
 import com.fluttercandies.photo_manager.permission.impl.PermissionDelegate29
-import com.fluttercandies.photo_manager.permission.impl.PermissionDelegate30
 import com.fluttercandies.photo_manager.permission.impl.PermissionDelegate33
 import com.fluttercandies.photo_manager.permission.impl.PermissionDelegate34
 import com.fluttercandies.photo_manager.util.LogUtils
 import com.fluttercandies.photo_manager.util.ResultHandler
 
 abstract class PermissionDelegate {
-
     protected var resultHandler: ResultHandler? = null
 
     private val tag: String
@@ -26,7 +24,8 @@ abstract class PermissionDelegate {
 
     protected fun requestPermission(
         permissionsUtils: PermissionsUtils,
-        permission: MutableList<String>
+        permission: MutableList<String>,
+        requestCode: Int = PermissionDelegate.requestCode
     ) {
         val activity = permissionsUtils.getActivity()
             ?: throw NullPointerException("Activity for the permission request is not exist.")
@@ -40,7 +39,7 @@ abstract class PermissionDelegate {
     /**
      * Check if the permission is in the manifest.
      */
-    private fun havePermissionInManifest(context: Context, permission: String): Boolean {
+    protected fun havePermissionInManifest(context: Context, permission: String): Boolean {
         val applicationInfo = context.applicationInfo
         val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.packageManager.getPackageInfo(
@@ -53,7 +52,7 @@ abstract class PermissionDelegate {
                 PackageManager.GET_PERMISSIONS
             )
         }
-        return packageInfo.requestedPermissions.contains(permission)
+        return packageInfo.requestedPermissions?.contains(permission) == true
     }
 
     /**
@@ -129,8 +128,7 @@ abstract class PermissionDelegate {
             return when (Build.VERSION.SDK_INT) {
                 in 1 until 23 -> PermissionDelegate19()
                 in 23 until 29 -> PermissionDelegate23()
-                29 -> PermissionDelegate29()
-                in 30 until 33 -> PermissionDelegate30()
+                in 29 until 33 -> PermissionDelegate29()
                 33 -> PermissionDelegate33()
                 in 34 until Int.MAX_VALUE -> PermissionDelegate34()
                 else -> throw UnsupportedOperationException(
@@ -175,5 +173,4 @@ abstract class PermissionDelegate {
         requestType: Int,
         mediaLocation: Boolean
     ): PermissionResult
-
 }

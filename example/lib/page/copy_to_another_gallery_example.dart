@@ -8,9 +8,9 @@ import '../util/log.dart';
 
 class CopyToAnotherGalleryPage extends StatefulWidget {
   const CopyToAnotherGalleryPage({
-    Key? key,
+    super.key,
     required this.assetEntity,
-  }) : super(key: key);
+  });
 
   final AssetEntity assetEntity;
 
@@ -87,7 +87,7 @@ class _CopyToAnotherGalleryPageState extends State<CopyToAnotherGalleryPage> {
     if (targetGallery == null) {
       return;
     }
-    final AssetEntity? result = await PhotoManager.editor.copyAssetToPath(
+    final AssetEntity result = await PhotoManager.editor.copyAssetToPath(
       asset: widget.assetEntity,
       pathEntity: targetGallery!,
     );

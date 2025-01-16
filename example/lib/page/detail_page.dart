@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:photo_manager/platform_utils.dart';
 import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
 
 import '../util/common_util.dart';
@@ -7,7 +8,7 @@ import '../widget/live_photos_widget.dart';
 import '../widget/video_widget.dart';
 
 class DetailPage extends StatefulWidget {
-  const DetailPage({Key? key, required this.entity}) : super(key: key);
+  const DetailPage({super.key, required this.entity});
 
   final AssetEntity entity;
 
@@ -17,7 +18,7 @@ class DetailPage extends StatefulWidget {
 
 class _DetailPageState extends State<DetailPage> {
   bool? useOrigin = true;
-  bool? useMediaUrl = true;
+  bool? useMediaUrl = true && !PlatformUtils.isOhos;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +43,7 @@ class _DetailPageState extends State<DetailPage> {
               },
               value: useOrigin,
             ),
-          if (widget.entity.type == AssetType.video)
+          if (widget.entity.type == AssetType.video && !PlatformUtils.isOhos)
             CheckboxListTile(
               title: const Text('Use Media Url'),
               value: useMediaUrl,

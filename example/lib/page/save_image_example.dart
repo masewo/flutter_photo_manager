@@ -3,13 +3,15 @@ import 'dart:typed_data' as typed_data;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:oktoast/oktoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:photo_manager/platform_utils.dart';
 
 import '../util/log.dart';
 
 class SaveMediaExample extends StatefulWidget {
-  const SaveMediaExample({Key? key}) : super(key: key);
+  const SaveMediaExample({super.key});
 
   @override
   State<SaveMediaExample> createState() => _SaveMediaExampleState();
@@ -49,6 +51,8 @@ class _SaveMediaExampleState extends State<SaveMediaExample> {
       ))![0]
           .absolute
           .path;
+    } else if (PlatformUtils.isOhos) {
+      dir = (await getDownloadsDirectory())!.absolute.path;
     } else {
       dir = (await getDownloadsDirectory())!.absolute.path;
     }
@@ -56,7 +60,7 @@ class _SaveMediaExampleState extends State<SaveMediaExample> {
     return '$dir/$name.jpg';
   }
 
-  var isNotify = false;
+  bool isNotify = false;
 
   @override
   void initState() {
@@ -128,9 +132,10 @@ class _SaveMediaExampleState extends State<SaveMediaExample> {
 
   Future<void> checkRequest(void Function() onAuth) async {
     final state = await PhotoManager.requestPermissionExtend(
-        requestOption: const PermissionRequestOption(
-      iosAccessLevel: IosAccessLevel.addOnly,
-    ));
+      requestOption: const PermissionRequestOption(
+        iosAccessLevel: IosAccessLevel.addOnly,
+      ),
+    );
     Log.d('state.isAuth: ${state.isAuth}');
     if (!state.isAuth) {
       return;
@@ -150,16 +155,20 @@ class _SaveMediaExampleState extends State<SaveMediaExample> {
     if (file.existsSync()) {
       file.deleteSync();
     }
-    resp.listen((List<int> data) {
-      file.writeAsBytesSync(data, mode: FileMode.append);
-    }, onDone: () async {
-      await checkRequest(() async {
-        final AssetEntity? asset =
-            await PhotoManager.editor.saveVideo(file, title: name);
-        Log.d('saved asset: $asset');
-      });
-      client.close();
-    });
+    resp.listen(
+      (List<int> data) {
+        file.writeAsBytesSync(data, mode: FileMode.append);
+      },
+      onDone: () async {
+        await checkRequest(() async {
+          final AssetEntity asset =
+              await PhotoManager.editor.saveVideo(file, title: name);
+          showToast('saved asset: $asset');
+          Log.d('saved asset: $asset');
+        });
+        client.close();
+      },
+    );
   }
 
   Future<void> saveImageWithBytes() async {
@@ -167,23 +176,26 @@ class _SaveMediaExampleState extends State<SaveMediaExample> {
     final HttpClientRequest req = await client.getUrl(Uri.parse(imageUrl));
     final HttpClientResponse resp = await req.close();
     final List<int> bytes = <int>[];
-    resp.listen((List<int> data) {
-      bytes.addAll(data);
-    }, onDone: () async {
-      await checkRequest(() async {
-        final image = typed_data.Uint8List.fromList(bytes);
-        saveImage(image);
-      });
+    resp.listen(
+      (List<int> data) {
+        bytes.addAll(data);
+      },
+      onDone: () async {
+        await checkRequest(() async {
+          final image = typed_data.Uint8List.fromList(bytes);
+          saveImage(image);
+        });
 
-      client.close();
-    });
+        client.close();
+      },
+    );
   }
 
   Future<void> saveImage(typed_data.Uint8List uint8List) async {
     await checkRequest(() async {
-      final AssetEntity? asset = await PhotoManager.editor.saveImage(
+      final AssetEntity asset = await PhotoManager.editor.saveImage(
         uint8List,
-        title: '${DateTime.now().millisecondsSinceEpoch}.jpg',
+        filename: '${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
       Log.d('saved asset: $asset');
     });
@@ -196,18 +208,21 @@ class _SaveMediaExampleState extends State<SaveMediaExample> {
 
     final File file = File(await downloadPath());
 
-    resp.listen((List<int> data) {
-      file.writeAsBytesSync(data, mode: FileMode.append);
-    }, onDone: () async {
-      Log.d('write image to file success: $file');
-      await checkRequest(() async {
-        final AssetEntity? asset = await PhotoManager.editor.saveImageWithPath(
-          file.path,
-          title: '${DateTime.now().millisecondsSinceEpoch}.jpg',
-        );
-        Log.d('saved asset: $asset');
-      });
-      client.close();
-    });
+    resp.listen(
+      (List<int> data) {
+        file.writeAsBytesSync(data, mode: FileMode.append);
+      },
+      onDone: () async {
+        Log.d('write image to file success: $file');
+        await checkRequest(() async {
+          final AssetEntity asset = await PhotoManager.editor.saveImageWithPath(
+            file.path,
+            title: '${DateTime.now().millisecondsSinceEpoch}.jpg',
+          );
+          Log.d('saved asset: $asset');
+        });
+        client.close();
+      },
+    );
   }
 }

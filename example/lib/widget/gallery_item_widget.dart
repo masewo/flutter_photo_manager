@@ -11,30 +11,17 @@ import 'dialog/list_dialog.dart';
 
 class GalleryItemWidget extends StatelessWidget {
   const GalleryItemWidget({
-    Key? key,
+    super.key,
     required this.path,
     required this.setState,
-  }) : super(key: key);
+  });
 
   final AssetPathEntity path;
   final ValueSetter<VoidCallback> setState;
 
   Widget buildGalleryItemWidget(AssetPathEntity item, BuildContext context) {
     final navigator = Navigator.of(context);
-    return GestureDetector(
-      child: ListTile(
-        title: Text(item.name),
-        subtitle: FutureBuilder<int>(
-          future: item.assetCountAsync,
-          builder: (_, AsyncSnapshot<int> data) {
-            if (data.hasData) {
-              return Text('count : ${data.data}');
-            }
-            return const SizedBox.shrink();
-          },
-        ),
-        trailing: _buildSubButton(item),
-      ),
+    return InkWell(
       onTap: () async {
         if (item.albumType == 2) {
           showToast("The folder can't get asset");
@@ -76,18 +63,25 @@ class GalleryItemWidget extends StatelessWidget {
               ElevatedButton(
                 child: const Text('Show properties for PathEntity in console.'),
                 onPressed: () async {
-                  String buffer = '';
+                  final StringBuffer sb = StringBuffer();
+                  sb.writeln('name = ${item.name}');
+                  sb.writeln('type = ${item.type}');
+                  sb.writeln('isAll = ${item.isAll}');
+                  sb.writeln('albumType = ${item.albumType}');
+                  sb.writeln('darwinType = ${item.albumTypeEx?.darwin?.type}');
+                  sb.writeln(
+                    'darwinSubType = ${item.albumTypeEx?.darwin?.subtype}',
+                  );
+                  sb.writeln(
+                    'ohosType = ${item.albumTypeEx?.ohos?.type}',
+                  );
+                  sb.writeln(
+                    'ohosSubType = ${item.albumTypeEx?.ohos?.subtype}',
+                  );
+                  sb.writeln('assetCount = ${await item.assetCountAsync}');
+                  sb.writeln('id = ${item.id}');
 
-                  buffer += 'name = ${item.name}\n';
-                  buffer += 'type = ${item.type}\n';
-                  buffer += 'isAll = ${item.isAll}\n';
-                  buffer += 'albumType = ${item.albumType}\n';
-                  buffer += 'darwinType = ${item.darwinType}\n';
-                  buffer += 'darwinSubType = ${item.darwinSubtype}\n';
-                  buffer += 'assetCount = ${await item.assetCountAsync}\n';
-                  buffer += 'id = ${item.id}\n';
-
-                  print(buffer);
+                  print(sb.toString());
                 },
               ),
             ],
@@ -97,10 +91,23 @@ class GalleryItemWidget extends StatelessWidget {
       // onDoubleTap: () async {
       //   final list =
       //       await item.getAssetListRange(start: 0, end: item.assetCount);
-      //   for (var i = 0; i < list.length; i++) {
+      //   for (int i = 0; i < list.length; i++) {
       //     final asset = list[i];
       //   }
       // },
+      child: ListTile(
+        title: Text(item.name),
+        subtitle: FutureBuilder<int>(
+          future: item.assetCountAsync,
+          builder: (_, AsyncSnapshot<int> data) {
+            if (data.hasData) {
+              return Text('count : ${data.data}');
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+        trailing: _buildSubButton(item),
+      ),
     );
   }
 

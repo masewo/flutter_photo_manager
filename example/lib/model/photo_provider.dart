@@ -6,6 +6,8 @@ import '../util/common_util.dart';
 import '../util/log.dart';
 
 class PhotoProvider extends ChangeNotifier {
+  bool showVerboseLog = false;
+
   List<AssetPathEntity> list = <AssetPathEntity>[];
 
   RequestType type = RequestType.common;
@@ -215,6 +217,7 @@ class PhotoProvider extends ChangeNotifier {
       ..setOption(AssetType.audio, option)
       ..createTimeCond = createDtCond
       ..containsPathModified = _containsPathModified
+      // ignore: deprecated_member_use
       ..containsLivePhotos = _containsLivePhotos
       ..onlyLivePhotos = onlyLivePhotos;
   }
@@ -247,8 +250,9 @@ class PhotoProvider extends ChangeNotifier {
   }
 
   /// For path filter option
-  var _pathFilterOption = const PMPathFilter();
   PMPathFilter get pathFilterOption => _pathFilterOption;
+  PMPathFilter _pathFilterOption = const PMPathFilter();
+
   List<PMDarwinAssetCollectionType> _pathTypeList =
       PMDarwinAssetCollectionType.values;
 
@@ -277,6 +281,11 @@ class PhotoProvider extends ChangeNotifier {
     _pathFilterOption = PMPathFilter(
       darwin: darwinPathFilterOption,
     );
+    notifyListeners();
+  }
+
+  void changeVerboseLog(bool v) {
+    showVerboseLog = v;
     notifyListeners();
   }
 }

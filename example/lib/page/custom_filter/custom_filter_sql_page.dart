@@ -7,9 +7,9 @@ import 'order_by_action.dart';
 
 class CustomFilterSqlPage extends StatefulWidget {
   const CustomFilterSqlPage({
-    Key? key,
+    super.key,
     required this.builder,
-  }) : super(key: key);
+  });
 
   final Widget Function(BuildContext context, CustomFilter filter) builder;
 
@@ -96,7 +96,8 @@ class _CustomFilterSqlPageState extends State<CustomFilterSqlPage> {
           ),
           ListTile(
             title: Text(
-                'Order By: \n${_orderBy.map((e) => e.toString()).join('\n')}'),
+              'Order By: \n${_orderBy.map((e) => e.toString()).join('\n')}',
+            ),
             subtitle: const Text('Click to edit'),
             onTap: () {
               changeOrderBy(context, _orderBy, (List<OrderByItem> value) {

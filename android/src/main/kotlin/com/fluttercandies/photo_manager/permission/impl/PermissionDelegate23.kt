@@ -5,11 +5,11 @@ import android.app.Application
 import android.content.Context
 import androidx.annotation.RequiresApi
 import com.fluttercandies.photo_manager.core.entity.PermissionResult
+import com.fluttercandies.photo_manager.permission.PermissionDelegate
 import com.fluttercandies.photo_manager.permission.PermissionsUtils
 
 @RequiresApi(23)
-open class PermissionDelegate23 : com.fluttercandies.photo_manager.permission.PermissionDelegate() {
-
+class PermissionDelegate23 : PermissionDelegate() {
     companion object {
         private const val readPermission = Manifest.permission.READ_EXTERNAL_STORAGE
         private const val writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -23,7 +23,7 @@ open class PermissionDelegate23 : com.fluttercandies.photo_manager.permission.Pe
     ) {
         val permissions = mutableListOf(readPermission, writePermission)
 
-        if (havePermission(context, readPermission) && havePermission(context, writePermission)) {
+        if (havePermissions(context, requestType)) {
             permissionsUtils.permissionsListener?.onGranted(permissions)
         } else {
             requestPermission(permissionsUtils, permissions)
@@ -31,7 +31,10 @@ open class PermissionDelegate23 : com.fluttercandies.photo_manager.permission.Pe
     }
 
     override fun havePermissions(context: Context, requestType: Int): Boolean {
-        return havePermission(context, readPermission) && havePermission(context, writePermission)
+        val requireWritePermission = havePermissionInManifest(context, writePermission)
+        val validWritePermission =
+            !requireWritePermission || havePermission(context, writePermission)
+        return havePermission(context, readPermission) && validWritePermission
     }
 
     override fun haveMediaLocation(context: Context): Boolean {
@@ -43,10 +46,10 @@ open class PermissionDelegate23 : com.fluttercandies.photo_manager.permission.Pe
         requestType: Int,
         mediaLocation: Boolean
     ): PermissionResult {
-        if (havePermissions(context, readPermission, writePermission)) {
-            return PermissionResult.Authorized
+        return if (havePermissions(context, requestType)) {
+            PermissionResult.Authorized
         } else {
-            return PermissionResult.Denied
+            PermissionResult.Denied
         }
     }
 }

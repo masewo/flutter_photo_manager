@@ -4,48 +4,241 @@ that can be found in the LICENSE file. -->
 
 # CHANGELOG
 
-## 3.0.0-dev.1
+To know more about breaking changes, see the [Migration Guide][].
 
-***Breaking changes*** for remove some methods and classes.
-Remove next methods of class
+## Unreleased
 
-- `Editor.iOS`: use `Editor.darwin` instead.
-- `PermisstionRequestOption`: use `PermissionRequestOption` instead.
-- `AssetPathEntity.assetCount`: use `AssetPathEntity.assetCountAsync` instead.
-- Removed `AssetEntityImage` and `AssetEntityImageProvider`.
+*None.*
 
-Also see [Migration Guide][].
+## 3.6.4
+
+### Fixes
+
+- Fix potential nil class value when unwrapping caught exceptions on Darwin.
+
+## 3.6.3
+
+### Improvements
+
+- Optimize task priority handling on Darwin by automatically assigning QoS levels based on method types.
+- Optimize the default sort descriptors on Darwin.
+
+### Fixes
+
+- Fix the incorrect type of conversion with the Live-Photo's duration on Darwin.
+
+## 3.6.2
+
+### Fixes
+
+- Fix request permissions for images and videos on Android API 33+.
+
+## 3.6.1
+
+### Fixes
+
+- Do not throw when querying non-existing assets in bulk on Android.
+
+## 3.6.0
+
+### Features
+
+- Allows to get the duration of a Live Photo with `AssetEntity.durationWithOptions` on iOS and macOS.
+
+### Improvements
+
+- Improves the options when fetching a fixed number of assets on iOS and macOS.
+
+### Fixes
+
+- Do not use `privateFileURL` on iOS 18+.
+- Fixes saving MP4 videos will result in 3GP on Android API 30-.
+- Fixes nullable results returned when saving images and videos on Android.
+
+## 3.5.2
+
+### Improvements
+
+- Get rid of `@try` `@catch` when toggling favorite on Darwin.
+
+### Fixes
+
+- Fix no returned IDs after successful deletion on Android API 29+.
+- Fix mediaLocation = true does not work on Android API 34.
+
+## 3.5.1
+
+### Improvements
+
+- Reuse files when saving images on Darwin.
+- Returns non-nullable results as much as possible.
+- Fix export session file type with videos for the first time on Darwin.
+
+## 3.5.0
+
+### Features
+
+- Provide `PMDarwinAVFileType` to help convert entities' files on iOS and macOS by making explicit exports.
+
+### Improvements
+
+- Improve cache output path equality on iOS and macOS.
+- Get the current resource filename rather than the raw one on iOS and macOS.
+  Also the plugin expands the ability when getting titles.
+- Use `PHCachingImageManager` to improve image memory caches on iOS and macOS.
+
+### Fixes
+
+- Fix incorrect download finished prediction during iCloud file downloading.
+
+## 3.4.0
+
+### Breaking changes
+
+`saveLivePhoto` now requires `title` rather than `filename`.
+
+### Features
+
+- Add `getPermissionState` method to `PhotoManager`.
+
+### Improvements
+
+- Adds a detached state for managers. Callers with those managers will first be aware of the detaching state
+  before any actual calls to avoid crashes.
+- Errors replied by the channel do not include detailed messages before.
+  Now the code will unwrap certain exceptions to extract details from them.
+- Expose `progressHandler` for `AssetEntity.getMediaUrl`.
+- Expose `withSubtype` for `AssetEntity.isLocallyAvailable` to request if a Live Photo resource is available.
+
+### Fixes
+
+- `PHAssetResource` with the type `PHAssetResourceTypeFullSizeVideo` does not count as a video type before,
+  making the resource obtain ignore them.
+- Fixes potential range exception when converting `NSTimeInterval` on Darwin.
+- Fixes progress not being updated when getting the non-original video file on iOS.
+- Fixes incorrect Live Photo resource being obtained which will result in a wrong aspect ratio.
+- Fixes Live Photos saving exceptions with the paired video.
+- Other lints and type promotion fixes.
+
+## 3.3.0
+
+### Breaking changes
+
+`saveImage` now requires `filename` rather than `title`, other save methods do not require `title` anymore.
+
+### Improvements
+
+- Allows saving assets with a given orientation value.
+- Improves the reading sequence when saving assets, which likely fixes issues with wrong orientation value.
+- Reads image size from EXIF rather than decoding from the bitmap factory.
+- Upgrades Android EXIF library.
+
+### Developer
+
+- Add verbose log for `MethodChannelPlugin`. (Use `PhotoManager.setLog` and pass `verboseFilePath` to enable it.)
+- Add `getVerboseFilePath` for `PhotoManager`.
+
+## 3.2.3
+
+### Fixes
+
+- Access `PMProgressHandler` more safely on iOS/macOS to avoid crashes and unfinished results.
+
+## 3.2.2
+
+### Fixes
+
+- Do not require `WRITE_EXTERNAL_STORAGE` if not declared in the manifest with Android 29-.
+- Fix `fetchPathProperties` exception on Android of API 28.
+
+## 3.2.1
+
+### Improvements
+
+* Declare `NSPrivacyAccessedAPICategoryFileTimestamp` for iOS privacy policies.
+
+### Fixes
+
+* Fixes compile exceptions with Xcode versions that are not compatible with iOS 17.0.
+* Modified the way to read the Java version in `build.gradle`.
+
+## 3.2.0
+
+### Improvements
+
+* Restores `containsLivePhotos` to `true` by default and deprecates it.
+* Use the main resource's filename for the title by default on iOS.
+* Support more methods on the OpenHarmony.
+
+### Fixes
+
+* Fix obtaining the correct resource from various types of resources on iOS.
+* Fix `isLocallyAvailable` for edited assets on iOS.
+
+## 3.1.1
+
+### Improvements
+
+* Update plugin structure for OpenHarmony.
+
+## 3.1.0
+
+### Breaking changes
+
+- `AssetPathEntity.darwinType` and `AssetPathEntity.darwinSubtype` are deprecated.
+- `containsLivePhotos` now defaults to `false`.
+
+See the [Migration Guide][] for details of breaking changes.
+
+### Features
+
+- Support OpenHarmony.
+
+### Fixes
+
+- Do not predicate subtype images as adjusted on Darwin.
+- Fix `PMProgressHandler` not getting notified when failed on Darwin.
+- Merge Android API 29 and 30 `PermissionDelegate`s
+  which allows Android API 29 to grant permissions without `WRITE_EXTERNAL_STORAGE`.
+
+### Improvements
+
+- Improve code formatting.
+- Add privacy file for iOS/macOS. (#1120)
+
+## 3.0.0
+
+### Breaking changes
+
+See the [Migration Guide][] for details of breaking changes.
+
+### Improvements
+
+- Remove the restriction of `getMediaUrl`.
+
+### Fixes
+
+- Fix `PhotoManager.editor.deleteWithIds` method not working on Android API 29.
+- Dispatch channel calls in main thread on Darwin.
+- Fix `presentLimit` did not finish on Android. (#1052)
+- Fix `requestPermissionExtend` returns the incorrect status on Android API 34.
 
 ## 2.8.1
 
-### Feature
+### Fixes
 
-Fix:
-
-- Upgrade android/build.gradle to load current java version from some environment variables.
+- Upgrade android/build.gradle to load the current java version from some environment variables.
 - Fix the `setIgnorePermissionCheck` method not working on Android.
 
 ## 2.8.0
 
-### Feature
+### Breaking changes
 
-- Support android API 34(Android 14) limit access to photos and videos.
-- Because limit permission, we refactor the permission request API.
+See the [Migration Guide][] for details of breaking changes.
 
-***Breaking changes for permission behavior***
+### Features
 
-Methods do not implicitly call for permission requests anymore.
-User must follow the below methods to ensure permissions were granted:
-
-1. `PhotoManager.requestPermissionExtend()`, verify if the result is
-   `PermissionState.authorized` or `PermissionState.limited`.
-2. `PhotoManager.setIgnorePermissionCheck(true)`, ignoring permission checks,
-   handle permission with other mechanisms.
-
-Behavior changes to the method of the method of `PhotoManager.editor.deleteWithIds`:
-
-- The behavior changes to delete instead of moving to Trash on Android 30+. (#959)
-- Provides a new method to move resources to the Trash. (`PhotoManager.editor.android.moveToTrash`), the method only support Android 30+. (#1005)
+- Support Android 14 with limited access to assets.
 
 ### Fixes
 
@@ -309,7 +502,10 @@ Behavior changes to the method of the method of `PhotoManager.editor.deleteWithI
 
 A major version release for performance improvements, new features, issues fixed, and breaking changes.
 Also, the LICENSE has been updated with the new author [FlutterCandies](https://github.com/fluttercandies).
-To know more about breaking changes, see the [Migration Guide][].
+
+### Breaking changes
+
+See the [Migration Guide][] for details of breaking changes.
 
 ### Features
 

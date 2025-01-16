@@ -11,13 +11,13 @@ that can be found in the LICENSE file. -->
 [![Build status](https://img.shields.io/github/actions/workflow/status/fluttercandies/flutter_photo_manager/runnable.yml?branch=main&label=CI&logo=github&style=flat-square)](https://github.com/fluttercandies/flutter_photo_manager/actions/workflows/runnable.yml)
 [![GitHub license](https://img.shields.io/github/license/fluttercandies/flutter_photo_manager)](https://github.com/fluttercandies/flutter_photo_manager/blob/main/LICENSE)
 
-[![GitHub stars](https://img.shields.io/github/stars/fluttercandies/flutter_photo_manager?style=social&label=Stars)](https://github.com/fluttercandies/flutter_photo_manager/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/fluttercandies/flutter_photo_manager?logo=github&style=flat-square)](https://github.com/fluttercandies/flutter_photo_manager/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/fluttercandies/flutter_photo_manager?logo=github&style=flat-square)](https://github.com/fluttercandies/flutter_photo_manager/network)
 [![Awesome Flutter](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/Solido/awesome-flutter)
 <a target="_blank" href="https://jq.qq.com/?_wv=1027&k=5bcc0gy"><img border="0" src="https://pub.idqqimg.com/wpa/images/group.png" alt="FlutterCandies" title="FlutterCandies"></a>
 
 通过相册的抽象 API 对设备中的资源（图片、视频、音频）进行管理，不需要集成 UI。
-在 Android、iOS 和 macOS 上可用。
+在 Android、iOS、macOS and OpenHarmony上可用。
 
 ## 集成此插件的推荐项目
 
@@ -38,7 +38,7 @@ that can be found in the LICENSE file. -->
   <summary>目录列表</summary>
 
 <!-- TOC -->
-* [photo_manager](#photomanager)
+* [photo_manager](#photo_manager)
   * [集成此插件的推荐项目](#集成此插件的推荐项目)
   * [关于此插件的文章](#关于此插件的文章)
   * [破坏性改动迁移指南](#破坏性改动迁移指南)
@@ -67,6 +67,7 @@ that can be found in the LICENSE file. -->
       * [通过原始数据获取](#通过原始数据获取)
       * [通过 iCloud 获取](#通过-icloud-获取)
       * [展示资源](#展示资源)
+      * [获取文件](#获取文件)
       * [获取「实况照片」](#获取实况照片)
         * [仅过滤「实况照片」](#仅过滤实况照片)
         * [获取「实况照片」的视频](#获取实况照片的视频)
@@ -97,12 +98,14 @@ that can be found in the LICENSE file. -->
       * [复制资源](#复制资源)
       * [仅适用于 Android 的功能](#仅适用于-android-的功能)
         * [将资源移动到另一个相册](#将资源移动到另一个相册)
+        * [将资源移动到废纸篓](#将资源移动到废纸篓)
         * [移除所有不存在的资源](#移除所有不存在的资源)
       * [适用于 iOS 或 macOS 的功能](#适用于-ios-或-macos-的功能)
         * [创建一个文件夹](#创建一个文件夹)
         * [创建一个相簿](#创建一个相簿)
         * [从相册中移除资源](#从相册中移除资源)
         * [删除 `AssetPathEntity`](#删除-assetpathentity)
+      * [适用于 OpenHarmony 的功能](#适用于-openharmony-的功能)
 <!-- TOC -->
 
 </details>
@@ -234,6 +237,9 @@ PhotoManager.setIgnorePermissionCheck(true);
 
 对于一些后台操作（应用未启动等）而言，忽略检查是比较合适的做法。
 
+同时你还可以调用 `PhotoManager.getPermissionState` 来获取权限状态。
+请确保调用该方法使用的权限设置与调用其他方法的权限设置相同。
+
 #### 受限的资源权限
 
 ##### iOS 受限的资源权限
@@ -244,6 +250,15 @@ iOS14 引入了部分资源限制的权限 (`PermissionState.limited`)。
 
 如果你想要重新选择在应用里能够读取到的资源，你可以使用 `PhotoManager.presentLimited()` 重新选择资源，
 这个方法对于 iOS 14 以上的版本生效。
+
+如果你想要禁止每次应用重新启动后访问媒体时自动弹出提示，
+你可以将 `Info.plist` 的 `Prevent limited photos access alert` 设置为 `YES`
+（或者像下面一样手动编写）：
+
+```plist
+<key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key>
+<true/>
+```
 
 ##### Android 受限的资源权限
 
@@ -267,13 +282,13 @@ final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList();
 
 #### `getAssetPathList` 方法的参数
 
-| 参数名           | 说明                                                         | 默认值              |
-| :--------------- | ------------------------------------------------------------ | ------------------- |
-| hasAll           | 如果你需要一个包含所有资源（AssetEntity) 的 PathEntity ，传入 true | true                |
-| onlyAll          | 如果你只需要一个包含所有资源的，传入true                     | false               |
-| type             | 资源文件的类型（视频、图片、音频）                           | RequestType.common  |
-| filterOption     | 用于筛选 AssetEntity，详情请参阅 [过滤资源](#过滤资源)       | FilterOptionGroup() |
-| pathFilterOption | 只对 iOS 和 macOS生效，对应原生中的相册类型，详情请参阅 [PMPathFilterOption](#pmpathfilteroption)。 | 默认为包含所有      |
+| 参数名              | 说明                                                                           | 默认值                 |
+|:-----------------|------------------------------------------------------------------------------|---------------------|
+| hasAll           | 如果你需要一个包含所有资源（AssetEntity) 的 PathEntity ，传入 true                             | true                |
+| onlyAll          | 如果你只需要一个包含所有资源的，传入true                                                       | false               |
+| type             | 资源文件的类型（视频、图片、音频）                                                            | RequestType.common  |
+| filterOption     | 用于筛选 AssetEntity，详情请参阅 [过滤资源](#过滤资源)                                         | FilterOptionGroup() |
+| pathFilterOption | 只对 iOS 和 macOS生效，对应原生中的相册类型，详情请参阅 [PMPathFilterOption](#pmpathfilteroption)。 | 默认为包含所有             |
 
 #### PMPathFilterOption
 
@@ -386,6 +401,11 @@ final AssetEntity? entity = await PhotoManager.editor.darwin.saveLivePhoto(
 
 请留意资源可能访问受限，或随时被删除，所以结果可能为空。
 
+iOS 和 macOS 可能会对资源保存附加额外的限制，目前仅部分资源类型可以保存为图库资源。
+该限制由 [`AVFileType`][] 定义，当你在保存时看到
+`PHPhotosErrorDomain Code=3302` (或者 `330x`) 错误时，
+确保你的文件类型受支持。
+
 #### 通过 iCloud 获取
 
 iOS 为了节省磁盘空间，可能将资源仅保存在 iCloud 上。
@@ -395,11 +415,30 @@ iOS 为了节省磁盘空间，可能将资源仅保存在 iCloud 上。
 推荐参考的实践是 `wechat_asset_picker` 中的
 [`LocallyAvailableBuilder`][]，它会在下载文件时提供进度的展示。
 
+有数个方法可以结合 `PMProgressHandler` 来提供进度反馈：
+* AssetEntity.thumbnailDataWithSize
+* AssetEntity.thumbnailDataWithOption
+* AssetEntity.getMediaUrl
+* AssetEntity.loadFile
+* PhotoManager.plugin.getOriginBytes
+
+iCloud 文件只能在设备上的 Apple ID 正常登录时获取。
+当账号要求重新输入密码验证时，未缓存在本地的 iCloud 文件将无法访问，
+此时相关方法会抛出 `CloudPhotoLibraryErrorDomain` 错误。
+
 #### 展示资源
 
-插件提供 `AssetEntityImage` widget 和
+从 v3.0.0 开始，插件不再提供任何 UI 组件。
+`AssetEntityImage` 和 `AssetEntityImageProvider` 在
+[`photo_manager_image_provider`][photo_manager_image_provider]
+插件中提供。
+
+新的插件提供 `AssetEntityImage` widget 和
 `AssetEntityImageProvider` 来处理资源的展示：
+
 ```dart
+import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
+
 final Widget image = AssetEntityImage(
   yourAssetEntity,
   isOriginal: false,
@@ -417,6 +456,19 @@ final Widget imageFromProvider = Image(
 );
 ```
 
+#### 获取文件
+
+`AssetEntity` 包含数个获取文件的 getter 和方法：
+* `.file`
+* `.fileWithSubtype`
+* `.originFile`
+* `.originFileWithSubtype`
+* `.loadFile`
+
+这些方法会获取与该资源关联的不同类型的文件。阅读它们的文档以了解具体的用途。
+
+另外，你可以使用 `PhotoManager.plugin.getFullFile` 来获取文件，该方法有完整的获取参数。
+
 #### 获取「实况照片」
 
 该插件支持获取和过滤 iOS 上的实况照片。
@@ -431,15 +483,41 @@ final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
 );
 ```
 
+或者你也可以使用 `CustomSqlFilter` 来获取「实况照片」：
+
+```dart
+final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
+  type: RequestType.image,
+  filterOption: CustomFilter.sql(
+  where: '${CustomColumns.base.mediaType} = 1'
+      ' AND '
+      '${CustomColumns.darwin.mediaSubtypes} & (1 << 3) = (1 << 3)',
+  ),
+);
+```
+
 ##### 获取「实况照片」的视频
 
 ```dart
 final AssetEntity entity = livePhotoEntity;
+
+// 播放实况照片的视频
 final String? mediaUrl = await entity.getMediaUrl();
+
+// 获取缩略图和视频
 final File? imageFile = await entity.file;
 final File? videoFile = await entity.fileWithSubtype;
+
+// 获取原图和原视频
 final File? originImageFile = await entity.originFile;
 final File? originVideoFile = await entity.originFileWithSubtype;
+
+// 将实况照片的视频从 mov 转换为 mp4
+final File? convertedFile = await entity.loadFile(
+  isOriginal: true,
+  withSubtye: true,
+  darwinFileType: PMDarwinAVFileType.mp4,
+);
 ```
 
 #### 限制
@@ -457,7 +535,7 @@ final File? originVideoFile = await entity.originFileWithSubtype;
 - 在不同平台和版本中，HEIC 文件并未被完全支持。
   我们建议你上传 JPEG 文件（HEIC 图片的 `.file`），
   以保持多个平台之间的一致行为。
-  查看 [flutter/flutter＃20522][] 了解更多细节。
+  查看 [flutter/flutter#20522][] 了解更多细节。
 - 视频将仅以原始格式获取，而不是组合过的格式，
   这可能会在播放视频时导致某些行为的差异。
 
@@ -712,24 +790,28 @@ rootProject.allprojects {
 
 #### Android 14 (API level 34) 额外配置
 
-当应用的 `targetSdkVersion` 为 34 (Android 14) 时，
-你需要在清单文件中添加以下额外配置：
+当你的应用在 API 34 (Android 14) 的设备上运行时，
+就算你的 `targetSdkVersion` 和 `compileSdkVersion` 不是 `34`，
+你也需要在清单文件中添加以下权限配置：
 
 ```xml
 <manifest>
-   <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" /> <!-- 这是一个可选的配置，不指定并不影响在代码中使用它 -->
+   <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" /> <!-- 如果需要提供可选的资源的功能 -->
 </manifest>
 ```
 
 #### Android 13 (API level 33) 额外配置
 
-当应用的 `targetSdkVersion` 为 33 (Android 13) 时，
-你需要在清单文件中添加以下额外配置：
+当你的应用在 API 33 (Android 13) 的设备上运行时，
+就算你的 `targetSdkVersion` 和 `compileSdkVersion` 不是 `33`，
+你也需要在清单文件中添加以下权限配置：
+
+> 注意：`READ_MEDIA_IMAGES` 和 `READ_MEDIA_VIDEO` 无论在请求图片还是请求视频时都需要。
 
 ```xml
 <manifest>
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> <!-- 如果需要读取图片 -->
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" /> <!-- 如果需要读取视频 -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> <!-- 如果需要读取图片或视频 -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" /> <!-- 如果需要读取视频或图片 -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" /> <!-- 如果需要读取音频 -->
 </manifest>
 ```
@@ -911,6 +993,20 @@ await PhotoManager.editor.darwin.removeAssetsInAlbum(
 PhotoManager.editor.darwin.deletePath();
 ```
 
+#### 适用于 OpenHarmony 的功能
+
+> 鸿蒙官方处于安全考虑已禁止相关资源能力。
+
+目前以支持除缓存相关的其他功能，且只支持图片和视频类型资源。
+
+| Feature                     | OpenHarmony |
+|:----------------------------|:-----------:|
+| releaseCache                |      ❌      |
+| clearFileCache              |      ❌      |
+| requestCacheAssetsThumbnail |      ❌      |
+| getSubPathEntities          |      ❌      |
+
+
 [pub package]: https://pub.flutter-io.cn/packages/photo_manager
 [repo]: https://github.com/fluttercandies/flutter_photo_manager
 [GitHub issues]: https://github.com/fluttercandies/flutter_photo_manager/issues
@@ -930,6 +1026,8 @@ PhotoManager.editor.darwin.deletePath();
 [`PhotoManager.getAssetListRange`]: https://pub.flutter-io.cn/documentation/photo_manager/latest/photo_manager/PhotoManager/getAssetListRange.html
 [`AssetEntity.fromId`]: https://pub.flutter-io.cn/documentation/photo_manager/latest/photo_manager/AssetEntity/fromId.html
 
+[`AVFileType`]: https://developer.apple.com/documentation/avfoundation/avfiletype
 [`LocallyAvailableBuilder`]: https://github.com/fluttercandies/flutter_wechat_assets_picker/blob/2055adfa74370339d10e6f09adef72f2130d2380/lib/src/widget/builder/locally_available_builder.dart
 
 [flutter/flutter#20522]: https://github.com/flutter/flutter/issues/20522
+[photo_manager_image_provider]: https://pub.flutter-io.cn/packages/photo_manager_image_provider

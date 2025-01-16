@@ -9,10 +9,10 @@ import 'package:video_player/video_player.dart';
 
 class LivePhotosWidget extends StatefulWidget {
   const LivePhotosWidget({
-    Key? key,
+    super.key,
     required this.entity,
     required this.useOrigin,
-  }) : super(key: key);
+  });
 
   final AssetEntity entity;
   final bool useOrigin;
@@ -31,7 +31,7 @@ class _LivePhotosWidgetState extends State<LivePhotosWidget> {
   }
 
   Future<void> _initializeController() async {
-    if (!await widget.entity.isLocallyAvailable()) {
+    if (!await widget.entity.isLocallyAvailable(withSubtype: true)) {
       if (widget.useOrigin) {
         await widget.entity.originFileWithSubtype;
       } else {
@@ -47,7 +47,6 @@ class _LivePhotosWidgetState extends State<LivePhotosWidget> {
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     )
       ..initialize()
-      ..setVolume(0)
       ..addListener(() {
         if (mounted) {
           setState(() {});

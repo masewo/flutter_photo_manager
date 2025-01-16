@@ -57,6 +57,34 @@ class PhotoManager {
     return plugin.requestPermissionExtend(requestOption);
   }
 
+  /// Get the current [PermissionState] of the photo library
+  /// with the given [requestOption].
+  ///
+  /// Example:
+  /// ```dart
+  /// final PermissionState state = await PhotoManager.getPermissionState(
+  ///   requestOption: const PermissionRequestOption(
+  ///     androidPermission: AndroidPermission(
+  //        type: RequestType.image,
+  //        mediaLocation: false,
+  //      ),
+  ///   ),
+  /// );
+  /// if (state == PermissionState.authorized) {
+  ///   print('The application has full access permission');
+  /// } else {
+  ///   print('The application does not have full access permission');
+  /// }
+  /// ```
+  ///
+  /// Note: On Android, this method may require an `Activity` context.
+  /// Call [setIgnorePermissionCheck] if the call is from background service.
+  static Future<PermissionState> getPermissionState({
+    required PermissionRequestOption requestOption,
+  }) {
+    return plugin.getPermissionState(requestOption);
+  }
+
   /// Prompts the limited assets selection modal on iOS.
   ///
   /// This method only supports from iOS 14.0, and will behave differently on
@@ -100,7 +128,22 @@ class PhotoManager {
   }
 
   /// Controls whether the plugin should log messages to the console during operation.
-  static Future<void> setLog(bool isLog) => plugin.setLog(isLog);
+  ///
+  /// The [isLog] parameter is used to enable or disable logging.
+  /// The [verboseFilePath] parameter is used to specify the path to record verbose logs.
+  static Future<void> setLog(
+    bool isLog, {
+    String? verboseFilePath,
+  }) async {
+    final isVerbose = isLog && verboseFilePath != null;
+    await plugin.setLog(isLog);
+    if (verboseFilePath != null) {
+      plugin.setVerbose(isVerbose, verboseFilePath);
+    }
+  }
+
+  /// Get the verbose file path
+  static String? getVerboseFilePath() => plugin.getVerboseFilePath();
 
   /// Whether to ignore all runtime permissions check.
   ///
@@ -127,6 +170,7 @@ class PhotoManager {
   /// call the [getAssetPathList] to start again.
   ///
   /// Make sure callers of this method have `await`ed properly.
+  /// The method does not supported on OpenHarmony.
   static Future<void> releaseCache() => plugin.releaseCache();
 
   /// {@macro photo_manager.NotifyManager.addChangeCallback}
@@ -171,6 +215,7 @@ class PhotoManager {
   static Future<String> systemVersion() => plugin.getSystemVersion();
 
   /// Clear all file caches.
+  /// The method does not supported on OpenHarmony.
   static Future<void> clearFileCache() => plugin.clearFileCache();
 
   /// Returns the count of assets.

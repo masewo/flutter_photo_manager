@@ -8,17 +8,22 @@ import 'package:oktoast/oktoast.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:photo_manager_example/page/developer/android/column_names_page.dart';
 import 'package:photo_manager_example/page/developer/custom_filter_page.dart';
+import 'package:provider/provider.dart';
 
+import '../../model/photo_provider.dart';
 import '../../util/log.dart';
+import '../../util/log_export.dart';
 import 'create_entity_by_id.dart';
 import 'dev_title_page.dart';
 import 'ios/create_folder_example.dart';
 import 'ios/edit_asset.dart';
 import 'issues_page/issue_index_page.dart';
+import 'permission_state_page.dart';
 import 'remove_all_android_not_exists_example.dart';
+import 'verbose_log_page.dart';
 
 class DeveloperIndexPage extends StatefulWidget {
-  const DeveloperIndexPage({Key? key}) : super(key: key);
+  const DeveloperIndexPage({super.key});
 
   @override
   State<DeveloperIndexPage> createState() => _DeveloperIndexPageState();
@@ -31,6 +36,26 @@ class _DeveloperIndexPageState extends State<DeveloperIndexPage> {
   static const exampleHeicUrl =
       'https://cdn.jsdelivr.net/gh/ExampleAssets/ExampleAsset@master/preview_0.heic';
 
+  Widget _buildVerboseLogSwitch(BuildContext conetxt) {
+    final PhotoProvider provider = context.watch<PhotoProvider>();
+    final bool verboseLog = provider.showVerboseLog;
+    return CheckboxListTile(
+      title: const Text('Verbose log'),
+      value: verboseLog,
+      onChanged: (value) async {
+        provider.changeVerboseLog(value!);
+        setState(() {});
+
+        if (verboseLog) {
+          final path = await PMVerboseLogUtil.shared.getLogFilePath();
+          PhotoManager.setLog(true, verboseFilePath: path);
+        } else {
+          PhotoManager.setLog(false);
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,6 +65,11 @@ class _DeveloperIndexPageState extends State<DeveloperIndexPage> {
       body: ListView(
         padding: const EdgeInsets.all(8.0),
         children: <Widget>[
+          _buildVerboseLogSwitch(context),
+          ElevatedButton(
+            onPressed: () => navToWidget(const VerboseLogPage()),
+            child: const Text('Show verbose log'),
+          ),
           ElevatedButton(
             onPressed: () => navToWidget(const CustomFilterPage()),
             child: const Text('Custom filter'),
@@ -49,6 +79,10 @@ class _DeveloperIndexPageState extends State<DeveloperIndexPage> {
               onPressed: () => navToWidget(const ColumnNamesPage()),
               child: const Text('Android: column names'),
             ),
+          ElevatedButton(
+            onPressed: () => navToWidget(const PermissionStatePage()),
+            child: const Text('Show permission state page'),
+          ),
           ElevatedButton(
             child: const Text('Show iOS create folder example.'),
             onPressed: () => navToWidget(const CreateFolderExample()),
@@ -113,11 +147,13 @@ class _DeveloperIndexPageState extends State<DeveloperIndexPage> {
               child: const Text('PresentLimited'),
             ),
         ]
-            .map((e) => Container(
-                  padding: const EdgeInsets.all(3.0),
-                  height: 44,
-                  child: e,
-                ))
+            .map(
+              (e) => Container(
+                padding: const EdgeInsets.all(3.0),
+                height: 44,
+                child: e,
+              ),
+            )
             .toList(),
       ),
     );
@@ -176,19 +212,20 @@ class _DeveloperIndexPageState extends State<DeveloperIndexPage> {
     }
     f.createSync();
 
-    resp.listen((List<int> data) {
-      f.writeAsBytesSync(data, mode: FileMode.append);
-    }, onDone: () async {
-      client.close();
-      Log.d('the video file length = ${f.lengthSync()}');
-      final AssetEntity? result =
-          await PhotoManager.editor.saveVideo(f, title: title);
-      if (result != null) {
+    resp.listen(
+      (List<int> data) {
+        f.writeAsBytesSync(data, mode: FileMode.append);
+      },
+      onDone: () async {
+        client.close();
+        Log.d('the video file length = ${f.lengthSync()}');
+        final AssetEntity result = await PhotoManager.editor.saveVideo(
+          f,
+          title: title,
+        );
         Log.d('result : ${(await result.originFile)?.path}');
-      } else {
-        Log.d('result is null');
-      }
-    });
+      },
+    );
   }
 
   Future<File?> _downloadFile(String url) async {
@@ -214,10 +251,12 @@ class _DeveloperIndexPageState extends State<DeveloperIndexPage> {
   Future<void> _saveLivePhoto() async {
     final File? imgFile = await _downloadFile(exampleHeicUrl);
     print(
-        'The image download to ${imgFile?.path}, length: ${imgFile?.lengthSync()}');
+      'The image download to ${imgFile?.path}, length: ${imgFile?.lengthSync()}',
+    );
     final File? videoFile = await _downloadFile(exampleMovUrl);
     print(
-        'The video download to ${videoFile?.path}, length: ${videoFile?.lengthSync()}');
+      'The video download to ${videoFile?.path}, length: ${videoFile?.lengthSync()}',
+    );
 
     try {
       if (imgFile == null || videoFile == null) {
@@ -228,7 +267,7 @@ class _DeveloperIndexPageState extends State<DeveloperIndexPage> {
         videoFile: videoFile,
         title: 'preview_0',
       );
-      print('save live photo result : ${assets?.id}');
+      print('save live photo result : ${assets.id}');
     } finally {
       imgFile?.deleteSync();
       videoFile?.deleteSync();
@@ -296,7 +335,8 @@ class _DeveloperIndexPageState extends State<DeveloperIndexPage> {
   Future<void> _testNeedTitle() async {
     final status = await PhotoManager.requestPermissionExtend(
       requestOption: const PermissionRequestOption(
-          iosAccessLevel: IosAccessLevel.readWrite),
+        iosAccessLevel: IosAccessLevel.readWrite,
+      ),
     );
 
     if (!status.isAuth) {

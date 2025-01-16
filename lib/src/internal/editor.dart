@@ -3,15 +3,18 @@
 // in the LICENSE file.
 
 import 'dart:io';
-import 'dart:typed_data';
+import 'dart:typed_data' as typed_data;
 
-import '../filter/path_filter.dart';
+import 'package:photo_manager/platform_utils.dart';
+
 import '../types/entity.dart';
+import 'enums.dart';
 import 'plugin.dart';
 
 class Editor {
   final DarwinEditor _darwin = const DarwinEditor();
   final AndroidEditor _android = const AndroidEditor();
+  final OhosEditor _ohos = const OhosEditor();
 
   /// Support iOS and macOS.
   DarwinEditor get darwin {
@@ -21,6 +24,7 @@ class Editor {
     throw const OSError('Darwin Editor should only be use on iOS or macOS.');
   }
 
+  /// Support Android.
   AndroidEditor get android {
     if (Platform.isAndroid) {
       return _android;
@@ -28,62 +32,85 @@ class Editor {
     throw const OSError('Android Editor should only be use on Android.');
   }
 
+  /// Support Openharmony.
+  OhosEditor get ohos {
+    if (PlatformUtils.isOhos) {
+      return _ohos;
+    }
+    throw const OSError('Ohos Editor should only be use on OpenHarmony.');
+  }
+
   /// Delete entities with specific IDs.
   ///
   /// Entities will be deleted no matter which album they're located at on iOS.
+  /// The method as [moveToTrash] on OpenHarmony, it's not support completely delete.
   Future<List<String>> deleteWithIds(List<String> ids) {
     return plugin.deleteWithIds(ids);
   }
 
   /// Save image to gallery from the given [data].
   ///
+  /// [filename] will be helpful to evaluate the MIME type from the [data].
+  ///
   /// {@template photo_manager.Editor.TitleWhenSaving}
-  /// [title] typically means the filename of the saving entity, which can be
-  /// obtained by `basename(file.path)`.
+  /// [title] is the title field on Android, and the original filename on iOS.
   /// {@endtemplate}
   ///
   /// {@template photo_manager.Editor.DescriptionWhenSaving}
   /// [desc] is the description field that only works on Android.
   /// {@endtemplate}
   ///
-  /// {@template photo_manager.Editor.SavingAssets}
+  /// {@template photo_manager.Editor.RelativePathWhenSaving}
   /// On Android 29 and above, you can use [relativePath] to specify the
   /// `RELATIVE_PATH` used in the MediaStore.
   /// The MIME type will either be formed from the title if you pass one,
   /// or guessed by the system, which does not always work.
   /// {@endtemplate}
-  Future<AssetEntity?> saveImage(
-    Uint8List data, {
-    required String title,
+  ///
+  /// {@template photo_manager.Editor.OrientationWhenSaving}
+  /// [orientation] is only available on Android. It could be useful when
+  /// some devices cannot recognizes the asset's size info well.
+  /// {@endtemplate}
+  Future<AssetEntity> saveImage(
+    typed_data.Uint8List data, {
+    required String filename,
+    String? title,
     String? desc,
     String? relativePath,
+    int? orientation,
   }) {
     return plugin.saveImage(
       data,
+      filename: filename,
       title: title,
       desc: desc,
       relativePath: relativePath,
+      orientation: orientation,
     );
   }
 
-  /// Save image to gallery from the given [path].
+  /// Save image to gallery from the given [filePath].
   ///
   /// {@macro photo_manager.Editor.TitleWhenSaving}
   ///
   /// {@macro photo_manager.Editor.DescriptionWhenSaving}
   ///
-  /// {@macro photo_manager.Editor.SavingAssets}
-  Future<AssetEntity?> saveImageWithPath(
-    String path, {
-    required String title,
+  /// {@macro photo_manager.Editor.RelativePathWhenSaving}
+  ///
+  /// {@macro photo_manager.Editor.OrientationWhenSaving}
+  Future<AssetEntity> saveImageWithPath(
+    String filePath, {
+    String? title,
     String? desc,
     String? relativePath,
+    int? orientation,
   }) {
     return plugin.saveImageWithPath(
-      path,
+      filePath,
       title: title,
       desc: desc,
       relativePath: relativePath,
+      orientation: orientation,
     );
   }
 
@@ -93,18 +120,22 @@ class Editor {
   ///
   /// {@macro photo_manager.Editor.DescriptionWhenSaving}
   ///
-  /// {@macro photo_manager.Editor.SavingAssets}
-  Future<AssetEntity?> saveVideo(
+  /// {@macro photo_manager.Editor.RelativePathWhenSaving}
+  ///
+  /// {@macro photo_manager.Editor.OrientationWhenSaving}
+  Future<AssetEntity> saveVideo(
     File file, {
-    required String title,
+    String? title,
     String? desc,
     String? relativePath,
+    int? orientation,
   }) {
     return plugin.saveVideo(
       file,
       title: title,
       desc: desc,
       relativePath: relativePath,
+      orientation: orientation,
     );
   }
 
@@ -112,7 +143,7 @@ class Editor {
   ///
   /// - Android: Produce a copy of the original file.
   /// - iOS/macOS: Make a soft link to the target file.
-  Future<AssetEntity?> copyAssetToPath({
+  Future<AssetEntity> copyAssetToPath({
     required AssetEntity asset,
     required AssetPathEntity pathEntity,
   }) {
@@ -203,7 +234,9 @@ class DarwinEditor {
     if (list.isEmpty) {
       return false;
     }
-    if (parent.darwinType == PMDarwinAssetCollectionType.smartAlbum) {
+    // ignore: deprecated_member_use_from_same_package
+    if ((parent.darwinType ?? parent.albumTypeEx?.darwin?.type) ==
+        PMDarwinAssetCollectionType.smartAlbum) {
       // Asset of smartAlbums can't be deleted.
       return false;
     }
@@ -215,7 +248,9 @@ class DarwinEditor {
   ///
   /// Returns `true` if the operation was successful; otherwise, `false`.
   Future<bool> deletePath(AssetPathEntity path) async {
-    if (path.darwinType == PMDarwinAssetCollectionType.smartAlbum) {
+    // ignore: deprecated_member_use_from_same_package
+    if ((path.darwinType ?? path.albumTypeEx?.darwin?.type) ==
+        PMDarwinAssetCollectionType.smartAlbum) {
       // SmartAlbums can't be deleted.
       return false;
     }
@@ -225,7 +260,7 @@ class DarwinEditor {
   /// Sets the favorite status of the given [entity].
   ///
   /// Returns the updated [AssetEntity] if the operation was successful; otherwise, `null`.
-  Future<AssetEntity?> favoriteAsset({
+  Future<AssetEntity> favoriteAsset({
     required AssetEntity entity,
     required bool favorite,
   }) async {
@@ -233,17 +268,22 @@ class DarwinEditor {
     if (result) {
       return entity.copyWith(isFavorite: favorite);
     }
-    return null;
+    throw StateError(
+      'Failed to favorite the asset '
+      '${entity.id} for unknown reason',
+    );
   }
 
   /// Save Live Photo to the gallery from the given [imageFile] and [videoFile].
   ///
   /// {@macro photo_manager.Editor.TitleWhenSaving}
-  ///
-  /// {@macro photo_manager.Editor.DescriptionWhenSaving}
-  ///
-  /// {@macro photo_manager.Editor.SavingAssets}
-  Future<AssetEntity?> saveLivePhoto({
+  /// For a Live Photo, [title] typically take place when saving the resources
+  /// and should not contain the extension. For example:
+  /// GOOD: "my_live_photo_20240123_123456"
+  /// BAD: "my_live_photo_20240123_123456.jpg"
+  /// BAD: "my_live_photo_20240123_123456.mov"
+  /// BAD: "my_live_photo_20240123_123456.heic"
+  Future<AssetEntity> saveLivePhoto({
     required File imageFile,
     required File videoFile,
     required String title,
@@ -286,5 +326,33 @@ class AndroidEditor {
   /// Move to trash
   Future<List<String>> moveToTrash(List<AssetEntity> list) {
     return plugin.moveToTrash(list);
+  }
+}
+
+/// An editor for OpenHarmony.
+class OhosEditor {
+  /// Creates a new [OhosEditor] object.
+  const OhosEditor();
+
+  /// Returns column names of the photo access.
+  Future<List<String>> ohosColumns() {
+    return plugin.ohosColumns();
+  }
+
+  /// Sets the favorite status of the given [entity].
+  ///
+  /// Returns the updated [AssetEntity] if the operation was successful; otherwise, `null`.
+  Future<AssetEntity> favoriteAsset({
+    required AssetEntity entity,
+    required bool favorite,
+  }) async {
+    final bool result = await plugin.favoriteAsset(entity.id, favorite);
+    if (result) {
+      return entity.copyWith(isFavorite: favorite);
+    }
+    throw StateError(
+      'Failed to favorite the asset '
+      '${entity.id} for unknown reason',
+    );
   }
 }

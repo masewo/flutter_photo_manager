@@ -8,9 +8,9 @@ import 'dart:typed_data' as typed_data;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
+import '../../platform_utils.dart';
 import '../filter/base_filter.dart';
 import '../filter/classical/filter_option_group.dart';
-import '../filter/path_filter.dart';
 import '../internal/constants.dart';
 import '../internal/enums.dart';
 import '../internal/plugin.dart';
@@ -32,8 +32,17 @@ class AssetPathEntity {
     this.type = RequestType.common,
     this.isAll = false,
     PMFilter? filterOption,
+    @Deprecated(
+      'Use `albumTypeEx.darwin.type` instead. '
+      'This feature was deprecated after v3.1.0',
+    )
     this.darwinSubtype,
+    @Deprecated(
+      'Use `albumTypeEx.darwin.subtype` instead. '
+      'This feature was deprecated after v3.1.0',
+    )
     this.darwinType,
+    this.albumTypeEx,
   }) : filterOption = filterOption ??= FilterOptionGroup();
 
   /// Obtain an entity from ID.
@@ -98,12 +107,23 @@ class AssetPathEntity {
   /// The darwin collection type, in android, the value is always null.
   ///
   /// If the [albumType] is 2, the value will be null.
+  @Deprecated(
+    'Use `albumTypeEx.darwin.type` instead. '
+    'This feature was deprecated after v3.1.0',
+  )
   final PMDarwinAssetCollectionType? darwinType;
 
   /// The darwin collection subtype, in android, the value is always null.
   ///
   /// If the [albumType] is 2, the value will be null.
+  @Deprecated(
+    'Use `albumTypeEx.darwin.subtype` instead. '
+    'This feature was deprecated after v3.1.0',
+  )
   final PMDarwinAssetCollectionSubtype? darwinSubtype;
+
+  /// The extra information of the album type.
+  final AlbumType? albumTypeEx;
 
   /// Call this method to obtain new path entity.
   static Future<AssetPathEntity> obtainPathFromProperties({
@@ -168,22 +188,15 @@ class AssetPathEntity {
   ///
   /// [page] should starts with and greater than 0.
   /// [size] is item count of current [page].
+  ///
+  /// The length of returned assets might be less than requested.
+  /// Not existing assets will be excluded from the result.
   Future<List<AssetEntity>> getAssetListPaged({
     required int page,
     required int size,
   }) {
     assert(albumType == 1, 'Only album can request for assets.');
     assert(size > 0, 'Page size must be greater than 0.');
-
-    final filterOption = this.filterOption;
-
-    if (filterOption is FilterOptionGroup) {
-      assert(
-        type == RequestType.image || !filterOption.onlyLivePhotos,
-        'Filtering only Live Photos is only supported '
-        'when the request type contains image.',
-      );
-    }
     return plugin.getAssetListPaged(
       id,
       page: page,
@@ -196,8 +209,11 @@ class AssetPathEntity {
   /// Getting assets in range using [start] and [end].
   ///
   /// The [start] and [end] are similar to [String.substring], but it'll return
-  /// the maxmium assets if the total count of assets is fewer than the range,
+  /// the maximum assets if the total count of assets is fewer than the range,
   /// instead of throwing a [RangeError] like [String.substring].
+  ///
+  /// The length of returned assets might be less than requested.
+  /// Not existing assets will be excluded from the result.
   Future<List<AssetEntity>> getAssetListRange({
     required int start,
     required int end,
@@ -206,14 +222,6 @@ class AssetPathEntity {
     assert(start >= 0, 'The start must be greater than 0.');
     assert(end > start, 'The end must be greater than start.');
     final filterOption = this.filterOption;
-
-    if (filterOption is FilterOptionGroup) {
-      assert(
-        type == RequestType.image || !filterOption.onlyLivePhotos,
-        'Filtering only Live Photos is only supported '
-        'when the request type contains image.',
-      );
-    }
     final int count = await assetCountAsync;
     if (end > count) {
       end = count;
@@ -269,8 +277,17 @@ class AssetPathEntity {
     RequestType? type,
     bool? isAll,
     PMFilter? filterOption,
+    @Deprecated(
+      'Use `albumTypeEx` instead. '
+      'This feature was deprecated after v3.1.0',
+    )
     PMDarwinAssetCollectionType? darwinType,
+    @Deprecated(
+      'Use `albumTypeEx` instead. '
+      'This feature was deprecated after v3.1.0',
+    )
     PMDarwinAssetCollectionSubtype? darwinSubtype,
+    AlbumType? albumTypeEx,
   }) {
     return AssetPathEntity(
       id: id ?? this.id,
@@ -280,8 +297,11 @@ class AssetPathEntity {
       type: type ?? this.type,
       isAll: isAll ?? this.isAll,
       filterOption: filterOption ?? this.filterOption,
+      // ignore: deprecated_member_use_from_same_package
       darwinSubtype: darwinSubtype ?? this.darwinSubtype,
+      // ignore: deprecated_member_use_from_same_package
       darwinType: darwinType ?? this.darwinType,
+      albumTypeEx: albumTypeEx ?? this.albumTypeEx,
     );
   }
 
@@ -295,7 +315,12 @@ class AssetPathEntity {
         albumType == other.albumType &&
         type == other.type &&
         lastModified == other.lastModified &&
-        isAll == other.isAll;
+        isAll == other.isAll &&
+        // ignore: deprecated_member_use_from_same_package
+        darwinType == other.darwinType &&
+        // ignore: deprecated_member_use_from_same_package
+        darwinSubtype == other.darwinSubtype &&
+        albumTypeEx == other.albumTypeEx;
   }
 
   @override
@@ -305,7 +330,12 @@ class AssetPathEntity {
       albumType.hashCode ^
       type.hashCode ^
       lastModified.hashCode ^
-      isAll.hashCode;
+      isAll.hashCode ^
+      // ignore: deprecated_member_use_from_same_package
+      darwinType.hashCode ^
+      // ignore: deprecated_member_use_from_same_package
+      darwinSubtype.hashCode ^
+      albumTypeEx.hashCode;
 
   @override
   String toString() {
@@ -353,8 +383,7 @@ class AssetEntity {
 
   /// Refresh the property of [AssetPathEntity] from the given ID.
   static Future<AssetEntity?> _obtainAssetFromId(String id) async {
-    final Map<dynamic, dynamic>? result =
-        await plugin.fetchEntityProperties(id);
+    final Map? result = await plugin.fetchEntityProperties(id);
     if (result == null) {
       return null;
     }
@@ -412,6 +441,16 @@ class AssetEntity {
   ///  * [videoDuration] which is a duration getter for videos.
   final int duration;
 
+  /// Obtain the duration with the given options.
+  ///
+  /// [withSubtype] only works on iOS/macOS.
+  Future<int> durationWithOptions({bool withSubtype = false}) async {
+    if (withSubtype) {
+      return plugin.getDurationWithOptions(id, subtype: subtype);
+    }
+    return duration;
+  }
+
   /// The width of the asset.
   ///
   /// This field could be 0 in cases that EXIF info is failed to parse.
@@ -422,13 +461,17 @@ class AssetEntity {
   /// This field could be 0 in cases that EXIF info is failed to parse.
   final int height;
 
-  bool get _isLandscape => orientation == 90 || orientation == 270;
+  // 90 and 270 typically means the image is flipping.
+  bool get _isFlipping => orientation == 90 || orientation == 270;
 
-  int get orientatedWidth => _isLandscape ? height : width;
+  /// The orientated width according to the orientation.
+  int get orientatedWidth => _isFlipping ? height : width;
 
-  int get orientatedHeight => _isLandscape ? width : height;
+  /// The orientated height according to the orientation.
+  int get orientatedHeight => _isFlipping ? width : height;
 
-  Size get orientatedSize => _isLandscape ? size.flipped : size;
+  /// The orientated size according to the orientation.
+  Size get orientatedSize => _isFlipping ? size.flipped : size;
 
   /// Latitude value of the location when shooting.
   ///  * Android: `MediaStore.Images.ImageColumns.LATITUDE`.
@@ -458,8 +501,17 @@ class AssetEntity {
   ///  * Android: Always true.
   ///  * iOS/macOS: Whether the asset has been uploaded to iCloud
   ///    and locally exist (including cached or not).
-  Future<bool> isLocallyAvailable({bool isOrigin = false}) {
-    return plugin.isLocallyAvailable(id, isOrigin: isOrigin);
+  Future<bool> isLocallyAvailable({
+    bool isOrigin = false,
+    bool withSubtype = false,
+    PMDarwinAVFileType? darwinFileType,
+  }) {
+    return plugin.isLocallyAvailable(
+      id,
+      isOrigin: isOrigin,
+      subtype: withSubtype ? subtype : 0,
+      darwinFileType: darwinFileType,
+    );
   }
 
   /// Obtain latitude and longitude.
@@ -519,6 +571,9 @@ class AssetEntity {
   ///
   /// [withSubtype] only takes effect on iOS, typically for Live Photos.
   ///
+  /// [darwinFileType] will try to define the export format when
+  /// exporting assets, such as exporting a MOV file to MP4.
+  ///
   /// See also:
   ///  * [file] which can obtain the compressed file.
   ///  * [fileWithSubtype] which can obtain the compressed file with subtype.
@@ -528,11 +583,13 @@ class AssetEntity {
     bool isOrigin = true,
     bool withSubtype = false,
     PMProgressHandler? progressHandler,
+    PMDarwinAVFileType? darwinFileType,
   }) {
     return _getFile(
       isOrigin: isOrigin,
       subtype: withSubtype ? subtype : 0,
       progressHandler: progressHandler,
+      darwinFileType: darwinFileType,
     );
   }
 
@@ -668,7 +725,7 @@ class AssetEntity {
   /// Check whether the asset has been deleted.
   Future<bool> get exists => plugin.assetExistsWithId(id);
 
-  /// Provide regular URL for players. Only available for audios and videos.
+  /// Provide regular URL for players.
   ///  * Android: Content URI, e.g.
   ///    `content://media/external/video/media/894857`.
   ///  * iOS/macOS: File URL. e.g.
@@ -677,20 +734,26 @@ class AssetEntity {
   /// See also:
   ///  * https://developer.android.com/reference/android/content/ContentUris
   ///  * https://developer.apple.com/documentation/avfoundation/avurlasset
-  Future<String?> getMediaUrl() async {
-    if (type == AssetType.video || type == AssetType.audio || isLivePhoto) {
-      return plugin.getMediaUrl(this);
-    }
-    return null;
+  Future<String?> getMediaUrl({
+    PMProgressHandler? progressHandler,
+  }) {
+    return plugin.getMediaUrl(
+      this,
+      progressHandler: progressHandler,
+    );
   }
 
   bool get _platformMatched =>
-      Platform.isIOS || Platform.isMacOS || Platform.isAndroid;
+      Platform.isIOS ||
+      Platform.isMacOS ||
+      Platform.isAndroid ||
+      PlatformUtils.isOhos;
 
   Future<File?> _getFile({
     bool isOrigin = false,
     PMProgressHandler? progressHandler,
     int subtype = 0,
+    PMDarwinAVFileType? darwinFileType,
   }) async {
     assert(
       _platformMatched,
@@ -704,6 +767,7 @@ class AssetEntity {
       isOrigin: isOrigin,
       progressHandler: progressHandler,
       subtype: subtype,
+      darwinFileType: darwinFileType,
     );
     if (path == null) {
       return null;
@@ -721,8 +785,13 @@ class AssetEntity {
     if (!_platformMatched) {
       return null;
     }
-    if (Platform.isAndroid &&
-        int.parse(await plugin.getSystemVersion()) >= 29) {
+    if (Platform.isAndroid) {
+      final sdkInt = int.parse(await plugin.getSystemVersion());
+      if (sdkInt > 29) {
+        return plugin.getOriginBytes(id, progressHandler: progressHandler);
+      }
+    }
+    if (PlatformUtils.isOhos) {
       return plugin.getOriginBytes(id, progressHandler: progressHandler);
     }
     final File? file = await originFile;

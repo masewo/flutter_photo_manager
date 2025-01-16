@@ -2,20 +2,23 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:photo_manager/platform_utils.dart';
 
 Future<void> changeOrderBy(
   BuildContext context,
   List<OrderByItem> items,
   ValueChanged<List<OrderByItem>> onChanged,
 ) async {
+  OrderByActionPage._saveItems = null;
   final result = await Navigator.push<List<OrderByItem>>(
-    context,
-    MaterialPageRoute<List<OrderByItem>>(
-      builder: (_) => OrderByActionPage(
-        items: items.toList(),
-      ),
-    ),
-  );
+        context,
+        MaterialPageRoute<List<OrderByItem>>(
+          builder: (_) => OrderByActionPage(
+            items: items.toList(),
+          ),
+        ),
+      ) ??
+      OrderByActionPage._saveItems;
   if (result != null) {
     onChanged(result);
   }
@@ -23,10 +26,10 @@ Future<void> changeOrderBy(
 
 class OrderByAction extends StatelessWidget {
   const OrderByAction({
-    Key? key,
+    super.key,
     required this.items,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   final List<OrderByItem> items;
   final ValueChanged<List<OrderByItem>> onChanged;
@@ -35,36 +38,34 @@ class OrderByAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Align(
-          alignment: Alignment.center,
-          child: IconButton(
-            onPressed: () async {
-              await changeOrderBy(context, items, onChanged);
-            },
-            icon: const Icon(Icons.sort),
-          ),
+        IconButton(
+          onPressed: () async {
+            await changeOrderBy(context, items, onChanged);
+          },
+          icon: const Icon(Icons.sort),
         ),
-        Positioned(
-          right: 5,
-          top: 5,
-          child: Container(
-            width: 15,
-            height: 15,
-            decoration: const BoxDecoration(
-              color: Colors.red,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                items.length.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 8,
+        if (items.isNotEmpty)
+          Positioned(
+            right: 5,
+            top: 5,
+            child: Container(
+              width: 15,
+              height: 15,
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  items.length.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -72,11 +73,12 @@ class OrderByAction extends StatelessWidget {
 
 class OrderByActionPage extends StatefulWidget {
   const OrderByActionPage({
-    Key? key,
+    super.key,
     required this.items,
-  }) : super(key: key);
+  });
 
   final List<OrderByItem> items;
+  static List<OrderByItem>? _saveItems;
 
   @override
   State<OrderByActionPage> createState() => _OrderByActionPageState();
@@ -91,42 +93,12 @@ class _OrderByActionPageState extends State<OrderByActionPage> {
   void initState() {
     super.initState();
     _items.addAll(widget.items);
-  }
-
-  Future<bool> sureBack() {
-    if (isEdit) {
-      return showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Are you sure?'),
-          content: const Text('You have not saved the changes.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
-              child: const Text('Sure'),
-            ),
-          ],
-        ),
-      ).then((value) => value == true);
-    } else {
-      return Future.value(true);
-    }
+    OrderByActionPage._saveItems = _items;
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: sureBack,
-      child: _buildBody(context),
-    );
+    return _buildBody(context);
   }
 
   Widget _buildBody(BuildContext context) {
@@ -189,6 +161,8 @@ class _OrderByActionPageState extends State<OrderByActionPage> {
       columns = AndroidMediaColumns.values();
     } else if (Platform.isMacOS || Platform.isIOS) {
       columns = DarwinColumns.values();
+    } else if (PlatformUtils.isOhos) {
+      columns = OhosColumns.values();
     } else {
       return const SizedBox.shrink();
     }

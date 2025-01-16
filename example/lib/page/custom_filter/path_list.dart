@@ -4,16 +4,20 @@ import 'package:photo_manager/photo_manager.dart';
 import 'package:photo_manager_example/page/custom_filter/path_page.dart';
 
 class FilterPathList extends StatelessWidget {
-  final CustomFilter filter;
+  const FilterPathList({super.key, required this.filter});
 
-  const FilterPathList({Key? key, required this.filter}) : super(key: key);
+  final CustomFilter filter;
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<AssetPathEntity>>(
-      future: PhotoManager.getAssetPathList(
-        filterOption: filter,
-      ),
+      future: Future(() async {
+        final ps = await PhotoManager.requestPermissionExtend();
+        if (!ps.hasAccess) {
+          throw StateError('No access');
+        }
+        return PhotoManager.getAssetPathList(filterOption: filter);
+      }),
       builder: (
         BuildContext context,
         AsyncSnapshot<List<AssetPathEntity>> snapshot,
@@ -29,9 +33,9 @@ class FilterPathList extends StatelessWidget {
 
 class PathList extends StatelessWidget {
   const PathList({
-    Key? key,
+    super.key,
     required this.list,
-  }) : super(key: key);
+  });
 
   final List<AssetPathEntity> list;
 

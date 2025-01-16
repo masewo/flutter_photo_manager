@@ -11,13 +11,13 @@ English | [中文](README-ZH.md)
 [![Build status](https://img.shields.io/github/actions/workflow/status/fluttercandies/flutter_photo_manager/runnable.yml?branch=main&label=CI&logo=github&style=flat-square)](https://github.com/fluttercandies/flutter_photo_manager/actions/workflows/runnable.yml)
 [![GitHub license](https://img.shields.io/github/license/fluttercandies/flutter_photo_manager)](https://github.com/fluttercandies/flutter_photo_manager/blob/main/LICENSE)
 
-[![GitHub stars](https://img.shields.io/github/stars/fluttercandies/flutter_photo_manager?style=social&label=Stars)](https://github.com/fluttercandies/flutter_photo_manager/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/fluttercandies/flutter_photo_manager?logo=github&style=flat-square)](https://github.com/fluttercandies/flutter_photo_manager/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/fluttercandies/flutter_photo_manager?logo=github&style=flat-square)](https://github.com/fluttercandies/flutter_photo_manager/network)
 [![Awesome Flutter](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/Solido/awesome-flutter)
 <a target="_blank" href="https://jq.qq.com/?_wv=1027&k=5bcc0gy"><img border="0" src="https://pub.idqqimg.com/wpa/images/group.png" alt="FlutterCandies" title="FlutterCandies"></a>
 
 A Flutter plugin that provides assets abstraction management APIs without UI integration,
-you can get assets (image/video/audio) on Android, iOS and macOS.
+you can get assets (image/video/audio) on Android, iOS, macOS and OpenHarmony.
 
 ## Projects using this plugin
 
@@ -39,7 +39,7 @@ see the [migration guide](MIGRATION_GUIDE.md) for detailed info.
   <summary>TOC</summary>
 
 <!-- TOC -->
-* [photo_manager](#photomanager)
+* [photo_manager](#photo_manager)
   * [Projects using this plugin](#projects-using-this-plugin)
   * [Articles about this plugin](#articles-about-this-plugin)
   * [Migration guide](#migration-guide)
@@ -57,7 +57,7 @@ see the [migration guide](MIGRATION_GUIDE.md) for detailed info.
     * [Request for permission](#request-for-permission)
       * [Limited entities access](#limited-entities-access)
         * [Limited entities access on iOS](#limited-entities-access-on-ios)
-        * [Limited entities access on android](#limited-entities-access-on-android)
+        * [Limited entities access on Android](#limited-entities-access-on-android)
     * [Get albums/folders (`AssetPathEntity`)](#get-albumsfolders-assetpathentity)
       * [Params of `getAssetPathList`](#params-of-getassetpathlist)
       * [PMPathFilterOption](#pmpathfilteroption)
@@ -68,6 +68,7 @@ see the [migration guide](MIGRATION_GUIDE.md) for detailed info.
       * [From raw data](#from-raw-data)
       * [From iCloud](#from-icloud)
       * [Display assets](#display-assets)
+      * [Get asset files](#get-asset-files)
       * [Obtain "Live Photos"](#obtain-live-photos)
         * [Filtering only "Live Photos"](#filtering-only-live-photos)
         * [Obtain the video from "Live Photos"](#obtain-the-video-from-live-photos)
@@ -88,8 +89,8 @@ see the [migration guide](MIGRATION_GUIDE.md) for detailed info.
   * [Native extra configs](#native-extra-configs)
     * [Android extra configs](#android-extra-configs)
       * [Glide issues](#glide-issues)
-      * [Android 14 (Api 34) extra configs](#android-14-api-34-extra-configs)
-      * [Android 13 (Api 33) extra configs](#android-13-api-33-extra-configs)
+      * [Android 14 (API 34) extra configs](#android-14-api-34-extra-configs)
+      * [Android 13 (API 33) extra configs](#android-13-api-33-extra-configs)
     * [iOS extra configs](#ios-extra-configs)
       * [Localized system albums name](#localized-system-albums-name)
     * [Experimental features](#experimental-features)
@@ -99,11 +100,13 @@ see the [migration guide](MIGRATION_GUIDE.md) for detailed info.
       * [Features for Android only](#features-for-android-only)
         * [Move an entity to another album](#move-an-entity-to-another-album)
         * [Remove all non-exist entities](#remove-all-non-exist-entities)
+        * [Move entities to trash](#move-entities-to-trash)
       * [Features for iOS or macOS](#features-for-ios-or-macos)
         * [Create a folder](#create-a-folder)
         * [Create an album](#create-an-album)
         * [Remove the entity entry from the album](#remove-the-entity-entry-from-the-album)
         * [Delete `AssetPathEntity`](#delete-assetpathentity)
+      * [Features for OpenHarmony](#features-for-openharmony)
 <!-- TOC -->
 
 </details>
@@ -246,6 +249,10 @@ PhotoManager.setIgnorePermissionCheck(true);
 For background processing (such as when the app is not in the foreground),
 ignore permissions check would be proper solution.
 
+You can also read the current permission state with
+`PhotoManager.getPermissionState`. Make sure the same permission request option
+is used between this request and other asset requests.
+
 #### Limited entities access
 
 ##### Limited entities access on iOS
@@ -261,7 +268,17 @@ accessible entities' management.
 This method only available for iOS 14+ and when the permission state
 is limited (`PermissionState.limited`).
 
-##### Limited entities access on android
+To suppress the automatic prompting from the system
+when each time you access the media after the app has restarted,
+you can set the `Prevent limited photos access alert` key to `YES`
+in your app's `Info.plist` (or manually writing as below):
+
+```plist
+<key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key>
+<true/>
+```
+
+##### Limited entities access on Android
 
 Android 14 (API 34) has also introduced the concept of limited assets similar to iOS.
 
@@ -284,12 +301,12 @@ See [`getAssetPathList`][] for more detail.
 
 #### Params of `getAssetPathList`
 
-| Name             | Description                                                  | Default value           |
-| :--------------- | ------------------------------------------------------------ | ----------------------- |
-| hasAll           | Set to true when you need an album containing all assets.    | true                    |
-| onlyAll          | Use this property if you only need one album containing all assets. | false                   |
-| type             | Type of media resource (video, image, audio)                 | RequestType.common      |
-| filterOption     | Used to filter resource files, see [Filtering](#filtering) for details | FilterOptionGroup()     |
+| Name             | Description                                                                                                                    | Default value           |
+|:-----------------|--------------------------------------------------------------------------------------------------------------------------------|-------------------------|
+| hasAll           | Set to true when you need an album containing all assets.                                                                      | true                    |
+| onlyAll          | Use this property if you only need one album containing all assets.                                                            | false                   |
+| type             | Type of media resource (video, image, audio)                                                                                   | RequestType.common      |
+| filterOption     | Used to filter resource files, see [Filtering](#filtering) for details                                                         | FilterOptionGroup()     |
 | pathFilterOption | Only valid for iOS and macOS, for the corresponding album type. See [PMPathFilterOption](#pmpathfilteroption) for more detail. | Include all by default. |
 
 #### PMPathFilterOption
@@ -412,9 +429,13 @@ final AssetEntity? entity = await PhotoManager.editor.darwin.saveLivePhoto(
 );
 ```
 
-Be aware that the created asset might have
-limited access or got deleted in anytime,
+Be aware that the created asset might have limited access or got deleted in anytime,
 so the result might be null.
+
+iOS and macOS might set extra limitations when saving assets, it seems only
+certain file types can be saved as a media assets. The limitation follows the definition of
+[`AVFileType`][], when you saw `PHPhotosErrorDomain Code=3302` (or `330x`),
+make sure the file type is supported.
 
 #### From iCloud
 
@@ -428,12 +449,30 @@ The preferred implementation would be the [`LocallyAvailableBuilder`][]
 in the `wechat_asset_picker` package, which provides a progress indicator
 when the file is downloading.
 
+There are several methods that can combine with `PMProgressHandler`
+to provide responsive progress events, which are:
+* AssetEntity.thumbnailDataWithSize
+* AssetEntity.thumbnailDataWithOption
+* AssetEntity.getMediaUrl
+* AssetEntity.loadFile
+* PhotoManager.plugin.getOriginBytes
+
+iCloud files can only be obtained when the Apple ID on the device are correctly authorized.
+When the account requires to re-enter the password to verify, iCloud files that are not
+locally available are not allowed to be fetched. The photo library will throws
+`CloudPhotoLibraryErrorDomain` in this circumstance.
+
 #### Display assets
 
-The plugin provided the `AssetEntityImage` widget and
-the `AssetEntityImageProvider` to display assets:
+> Starts from v3.0.0, `AssetEntityImage` and `AssetEntityImageProvider`
+> are provided in the
+> [`photo_manager_image_provider`][photo_manager_image_provider] package.
+
+Use the `AssetEntityImage` widget or the `AssetEntityImageProvider` to display assets:
 
 ```dart
+import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
+
 final Widget image = AssetEntityImage(
   yourAssetEntity,
   isOriginal: false, // Defaults to `true`.
@@ -451,6 +490,21 @@ final Widget imageFromProvider = Image(
 );
 ```
 
+#### Get asset files
+
+There are several file getters and methods with an `AssetEntity`:
+* `.file`
+* `.fileWithSubtype`
+* `.originFile`
+* `.originFileWithSubtype`
+* `.loadFile`
+
+These getters and methods will fetch different types of file related to that asset.
+Read their comment (documentation) to know their abilities.
+
+Additionally, you can use the raw plugin method
+`PhotoManager.plugin.getFullFile` with more parameters.
+
 #### Obtain "Live Photos"
 
 This plugin supports obtain live photos and filtering them:
@@ -466,15 +520,42 @@ final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
 );
 ```
 
+Or you can use the `CustomSqlFilter` to obtain live photos:
+
+```dart
+final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
+  type: RequestType.image,
+  filterOption: CustomFilter.sql(
+  where: '${CustomColumns.base.mediaType} = 1'
+      ' AND '
+      '${CustomColumns.darwin.mediaSubtypes} & (1 << 3) = (1 << 3)',
+  ),
+);
+```
+
 ##### Obtain the video from "Live Photos"
 
 ```dart
 final AssetEntity entity = livePhotoEntity;
+
+// To play Live Photo's video.
 final String? mediaUrl = await entity.getMediaUrl();
+
+// Get files for normal displays like thumbnails.
 final File? imageFile = await entity.file;
 final File? videoFile = await entity.fileWithSubtype;
+
+// Get files for the raw displays like detail preview.
 final File? originImageFile = await entity.originFile;
 final File? originVideoFile = await entity.originFileWithSubtype;
+
+// Additionally, you can convert Live Photo's (on iOS) video file
+// from `mov` to `mp4` using:
+final File? convertedFile = await entity.loadFile(
+  isOriginal: true,
+  withSubtye: true,
+  darwinFileType: PMDarwinAVFileType.mp4,
+);
 ```
 
 #### Limitations
@@ -767,24 +848,30 @@ rootProject.allprojects {
 See [ProGuard for Glide](https://github.com/bumptech/glide#proguard)
 if you want to know more about using ProGuard and Glide together.
 
-#### Android 14 (Api 34) extra configs
+#### Android 14 (API 34) extra configs
 
-When targeting Android 14 (API level 34),
-the following extra configs needs to be added to the manifest:
-
-```xml
-<uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />  <!-- If you want to use the limited access feature, it is an optional permission. -->
-```
-
-#### Android 13 (Api 33) extra configs
-
-When targeting Android 13 (API level 33),
-the following extra configs needs to be added to the manifest:
+When running on Android 14 (API level 34),
+the following permissions needs to be added to the manifest
+even if your `targetSdkVersion` and `compileSdkVersion` is not `34`:
 
 ```xml
 <manifest>
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> <!-- If you want to read images-->
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" /> <!-- If you want to read videos-->
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />  <!-- If you want to use the limited access feature. -->
+</manifest>
+```
+
+#### Android 13 (API 33) extra configs
+
+When running on Android 13 (API level 33),
+the following permissions needs to be added to the manifest
+even if your `targetSdkVersion` and `compileSdkVersion` is not `33`:
+
+> Note: `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO` are both required whether requesting images or videos.
+
+```xml
+<manifest>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> <!-- If you want to read images or videos-->
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" /> <!-- If you want to read videos or images-->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" /> <!-- If you want to read audio-->
 </manifest>
 ```
@@ -924,8 +1011,9 @@ and your customers accept repeatedly confirmations.
 await PhotoManager.editor.android.moveToTrash(list);
 ```
 
-The method support android 30 or higher. It will move the entities to trash.
-If the method is called on android 29 or lower, it will throw an exception.
+The method supports Android 11 and above versions.
+It will move the entities to trash.
+Throws exception when calling on Android 11-.
 
 #### Features for iOS or macOS
 
@@ -978,6 +1066,21 @@ Smart albums can't be deleted.
 PhotoManager.editor.darwin.deletePath();
 ```
 
+#### Features for OpenHarmony
+
+> The photo library feature is disabled in OpenHarmony officially because of the security concern.
+
+Most functions are supported except caching,
+and only images/videos are supported.
+
+| Feature                     | OpenHarmony |
+|:----------------------------|:-----------:|
+| releaseCache                |      ❌      |
+| clearFileCache              |      ❌      |
+| requestCacheAssetsThumbnail |      ❌      |
+| getSubPathEntities          |      ❌      |
+
+
 [pub package]: https://pub.dev/packages/photo_manager
 [repo]: https://github.com/fluttercandies/flutter_photo_manager
 [GitHub issues]: https://github.com/fluttercandies/flutter_photo_manager/issues
@@ -997,6 +1100,8 @@ PhotoManager.editor.darwin.deletePath();
 [`PhotoManager.getAssetListRange`]: https://pub.dev/documentation/photo_manager/latest/photo_manager/PhotoManager/getAssetListRange.html
 [`AssetEntity.fromId`]: https://pub.dev/documentation/photo_manager/latest/photo_manager/AssetEntity/fromId.html
 
+[`AVFileType`]: https://developer.apple.com/documentation/avfoundation/avfiletype
 [`LocallyAvailableBuilder`]: https://github.com/fluttercandies/flutter_wechat_assets_picker/blob/2055adfa74370339d10e6f09adef72f2130d2380/lib/src/widget/builder/locally_available_builder.dart
 
 [flutter/flutter#20522]: https://github.com/flutter/flutter/issues/20522
+[photo_manager_image_provider]: https://pub.dev/packages/photo_manager_image_provider

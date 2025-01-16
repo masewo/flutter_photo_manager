@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:photo_manager/platform_utils.dart';
 import 'package:provider/provider.dart';
 
 import '../model/photo_provider.dart';
@@ -21,9 +22,9 @@ import 'move_to_another_gallery_example.dart';
 
 class GalleryContentListPage extends StatefulWidget {
   const GalleryContentListPage({
-    Key? key,
+    super.key,
     required this.path,
-  }) : super(key: key);
+  });
 
   final AssetPathEntity path;
 
@@ -160,6 +161,20 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
                 },
               ),
             ElevatedButton(
+              child: const Text('Get file'),
+              onPressed: () => getFile(entity),
+            ),
+            if (entity.isLivePhoto)
+              ElevatedButton(
+                child: const Text('Get MP4 file'),
+                onPressed: () => getFileWithMP4(entity),
+              ),
+            if (entity.isLivePhoto)
+              ElevatedButton(
+                child: const Text('Get Live Photo duration'),
+                onPressed: () => getDurationOfLivePhoto(entity),
+              ),
+            ElevatedButton(
               child: const Text('Show detail page'),
               onPressed: () => routeToDetailPage(entity),
             ),
@@ -192,16 +207,23 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
                 <int>[500, 600, 700, 1000, 1500, 2000],
               ),
             ),
-            if (Platform.isIOS || Platform.isMacOS)
+            if (Platform.isIOS || Platform.isMacOS || PlatformUtils.isOhos)
               ElevatedButton(
                 child: const Text('Toggle isFavorite'),
                 onPressed: () async {
                   final bool isFavorite = entity.isFavorite;
                   print('Current isFavorite: $isFavorite');
-                  await PhotoManager.editor.darwin.favoriteAsset(
-                    entity: entity,
-                    favorite: !isFavorite,
-                  );
+                  if (PlatformUtils.isOhos) {
+                    await PhotoManager.editor.ohos.favoriteAsset(
+                      entity: entity,
+                      favorite: !isFavorite,
+                    );
+                  } else {
+                    await PhotoManager.editor.darwin.favoriteAsset(
+                      entity: entity,
+                      favorite: !isFavorite,
+                    );
+                  }
                   final AssetEntity? newEntity =
                       await entity.obtainForNewProperties();
                   print('New isFavorite: ${newEntity?.isFavorite}');
@@ -233,6 +255,25 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
     required List<AssetEntity> assets,
   }) {
     return assets.indexWhere((AssetEntity e) => e.id == id);
+  }
+
+  Future<void> getFile(AssetEntity entity) async {
+    final file = await entity.file;
+    print(file);
+  }
+
+  Future<void> getFileWithMP4(AssetEntity entity) async {
+    final file = await entity.loadFile(
+      isOrigin: false,
+      withSubtype: true,
+      darwinFileType: PMDarwinAVFileType.mp4,
+    );
+    print(file);
+  }
+
+  Future<void> getDurationOfLivePhoto(AssetEntity entity) async {
+    final duration = await entity.durationWithOptions(withSubtype: true);
+    print(duration);
   }
 
   Future<void> routeToDetailPage(AssetEntity entity) async {

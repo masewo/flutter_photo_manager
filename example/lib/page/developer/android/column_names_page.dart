@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class ColumnNamesPage extends StatefulWidget {
-  const ColumnNamesPage({Key? key}) : super(key: key);
+  const ColumnNamesPage({super.key});
 
   @override
   State<ColumnNamesPage> createState() => _ColumnNamesPageState();
@@ -12,7 +12,7 @@ class ColumnNamesPage extends StatefulWidget {
 class _ColumnNamesPageState extends State<ColumnNamesPage> {
   List<String> _columns = [];
 
-  void _refresh() async {
+  Future<void> _refresh() async {
     final columns = await PhotoManager.plugin.androidColumns();
     print('columns: $columns');
     columns.sort();
